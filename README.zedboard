@@ -1,0 +1,12 @@
+
+
+export ARCH=arm
+## I used CodeSourcery 2009q1 toolchain
+export CROSS_COMPILE=arm-none-linux-gnueabi-
+
+make digilent_zed_defconfig
+make
+
+## use devicetree_ramdisk.dtb that came with the zedboard
+## or build it from the dts file:
+./scripts/dtc/dtc -O dtb -I dts -o arch/arm/boot/devicetree_ramdisk.dtb arch/arm/boot/dts/digilent-zed.dts
