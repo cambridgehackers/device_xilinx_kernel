@@ -1,5 +1,5 @@
 /*
- * si570.h - Configuration for si570 misc driver.
+ * adv7511.h - Configuration for adv7511 misc driver.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -11,21 +11,25 @@
  * GNU General Public License for more details.
  */
 
-#ifndef __LINUX_SI570_H
-#define __LINUX_SI570_H
+#ifndef __LINUX_ADV7511_H
+#define __LINUX_ADV7511_H
 
 #include <linux/types.h>
 #include <linux/device.h>
 #include <linux/i2c.h>
 
-struct si570_platform_data {
-	u64 factory_fout;		/* Factory default output frequency */
-	unsigned long initial_fout;	/* Requested initial frequency */
+#define ADV7511_UNDEFINED 0
+#define ADV7511_RGB       1
+#define ADV7511_YCbCr     2
+
+#define FORMAT_NAME_SZ (5+1)
+
+struct adv7511_platform_data {
+	char format[FORMAT_NAME_SZ];
 };
 
-int get_frequency_si570(struct device *dev, unsigned long *freq);
-int set_frequency_si570(struct device *dev, unsigned long freq);
-int reset_si570(struct device *dev, int id);
-struct i2c_client *get_i2c_client_si570(void);
+struct i2c_client *adv7511_get_client(void);
+int adv7511_get_format(struct device *dev);
+int adv7511_set_format(struct device *dev, int type);
 
-#endif /* __LINUX_SI570_H */
+#endif /* __LINUX_ADV7511_H */

@@ -1,0 +1,318 @@
+/dts-v1/;
+
+/ {
+	model = "Xilinx Zynq ZC770";
+	compatible = "xlnx,zynq-zc770";
+	#address-cells = <0x1>;
+	#size-cells = <0x1>;
+	interrupt-parent = <0x1>;
+
+	memory {
+		device_type = "memory";
+		reg = <0x00000000 0x20000000>; 
+	};
+	chosen {
+		bootargs = "console=ttyPS0,115200n8 console=tty0 root=/dev/ram rw initrd=0x800000,8M ip=192.168.0.77:::255.255.255.0:ZED:eth0 earlyprintk mem=256M memmap=256M$0x10000000 vmalloc=256M";
+		linux,stdout-path = "/amba@0/uart@E0001000";
+	};
+
+	amba@0 {
+		compatible = "simple-bus";
+		#address-cells = <0x1>;
+		#size-cells = <0x1>;
+		ranges;
+
+		intc@f8f01000 {
+			interrupt-controller;
+			compatible = "arm,gic";
+			reg = <0xf8f01000 0x1000>;
+			#interrupt-cells = <0x2>;
+			linux,phandle = <0x1>;
+			phandle = <0x1>;
+		};
+
+		uart@e0001000 {
+			compatible = "xlnx,ps7-uart-1.00.a";
+			reg = <0xe0001000 0x1000>;
+			interrupts = <0x52 0x0>;
+			clock = <50000000>;
+		};
+
+		timer@0xf8001000 {
+			clock-frequency-timer0 = <111111111>;
+			clock-frequency-timer1 = <111111111>;
+			clock-frequency-timer2 = <111111111>;
+			compatible = "xlnx,ps7-ttc-1.00.a";
+			interrupts = < 42 0 43 0 44 0 >;
+			reg = < 0xf8001000 0x1000 >;
+		};
+
+		swdt@f8005000 {
+			device_type = "watchdog";
+			compatible = "xlnx,ps7-wdt-1.00.a";
+			reg = <0xf8005000 0x100>;
+			clock-frequency = <111111111>;
+		};
+
+		eth@e000b000 {
+			compatible = "xlnx,ps7-ethernet-1.00.a";
+			reg = <0xe000b000 0x1000>;
+			interrupts = <0x36 0x0>;
+			phy-handle = <&phy0>;
+			xlnx,ptp-enet-clock = <111111111>;
+			xlnx,slcr-div0-1000Mbps = <8>;
+			xlnx,slcr-div0-100Mbps = <8>;
+			xlnx,slcr-div0-10Mbps = <8>;
+			xlnx,slcr-div1-1000Mbps = <1>;
+			xlnx,slcr-div1-100Mbps = <5>;
+			xlnx,slcr-div1-10Mbps = <50>;
+			#address-cells = <0x1>;
+			#size-cells = <0x0>;
+
+			phy0: phy@0 {
+				compatible = "marvell,88e1510";
+				device_type = "ethernet-phy";
+				reg = <0x0>;
+				marvell,reg-init = <0x03 0x10 0xFF00 0x1E 0x03 0x11 0xFFF0 0x0A>;
+				linux,phandle = <0x2>;
+			};
+		};
+
+		i2c0: i2c@e0004000 {
+			compatible = "xlnx,ps7-i2c-1.00.a";
+			reg = <0xE0004000 0x1000>;
+			interrupts = <57 0>;
+			bus-id = <0>;
+			input-clk = <111111111>;
+			i2c-clk = <100000>;
+			
+			#address-cells = <1>;
+			#size-cells = <0>;
+		};
+
+		sdhci@e0100000 {
+			compatible = "generic-sdhci";
+			reg = <0xe0100000 0x1000>;
+			interrupts = <0x38 0x0>;
+			clock-frequency = <33333000>;
+		};
+
+		usb@e0002000 {
+			compatible = "xlnx,ps7-usb-1.00.a";
+			reg = <0xe0002000 0x1000>;
+			interrupts = <0x35 0x0>;
+			dr_mode = "host";
+			phy_type = "ulpi";
+		};
+
+		gpio@e000a000 {
+			compatible = "xlnx,ps7-gpio-1.00.a";
+			reg = <0xe000a000 0x1000>;
+			interrupts = <0x34 0x0>;
+		};
+
+		qspi0: spi@e000d000 {
+			compatible = "xlnx,ps7-qspi-1.00.a";
+			reg = <0xE000D000 0x1000>;
+			interrupts = <51 0>;
+			speed-hz = <200000000>;
+			bus-num = <1>;
+			num-chip-select = <1>;
+			is-dual = <0>;
+		};
+
+		devcfg@f8007000 {
+			compatible = "xlnx,ps7-dev-cfg-1.00.a";
+			reg = <0xf8007000 0x1000>;
+			interrupts = <0x28 0x0>;
+		};
+
+		logicvc0: logicvc@40030000 {
+			compatible = "xylon,logicvc-2.05.c";
+			reg = <0x40030000 0x6000>;
+			interrupts = <91 0>;
+			buffer-0-offset = <1080>;
+			buffer-1-offset = <1080>;
+			buffer-2-offset = <1080>;
+			buffer-3-offset = <1080>;
+			buffer-4-offset = <1080>;
+			display-interface = <0>;
+			e-data-width = <24>;
+			e-layer = <0>;
+			interconnect-m-axi-arb-priority = <0xf>;
+			ip-license-type = <0>;
+			ip-major-revision = <2>;
+			ip-minor-revision = <5>;
+			ip-patch-level = <0>;
+			layer-0-alpha-mode = <1>;
+			layer-0-data-width = <24>;
+			layer-0-offset = <7290>;
+			layer-1-alpha-mode = <0>;
+			layer-1-data-width = <24>;
+			layer-1-offset = <4050>;
+			layer-2-alpha-mode = <0>;
+			layer-2-data-width = <24>;
+			layer-2-offset = <0>;
+			layer-3-alpha-mode = <3>;
+			layer-3-data-width = <8>;
+			layer-3-offset = <12960>;
+			layer-4-alpha-mode = <0>;
+			layer-4-data-width = <24>;
+			layer-4-offset = <11340>;
+			little-endian = <1>;
+			lvds-data-width = <4>;
+			mem-burst = <4>;
+			mplb-awidth = <32>;
+			mplb-dwidth = <64>;
+			mplb-native-dwidth = <32>;
+			mplb-num-masters = <8>;
+			mplb-p2p = <0>;
+			mplb-priority = <3>;
+			mplb-smallest-slave = <32>;
+			mplb-support-bursts = <1>;
+			num-of-layers = <5>;
+			pixel-data-width = <24>;
+			readable-regs = <1>;
+			regs-interface = <2>;
+			regs-little-endian = <1>;
+			row-stride = <2048>;
+			use-background = <1>;
+			use-e-rgb-input = <0>;
+			use-e-vclk-bufgmux = <1>;
+			use-io-hw-serializer = <0>;
+			use-multiplier = <2>;
+			use-serialized-blender = <0>;
+			use-size-position = <1>;
+			use-xtreme-dsp = <2>;
+			vmem-baseaddr = <0x10000000>;
+			vmem-highaddr = <0x1FFFFFFF>;
+			vmem-data-bus-width = <64>;
+			vmem-interface = <2>;
+		};
+
+		xylon-video-params {
+			pixel-data-invert = <0>;
+			pixel-clock-active-high = <1>;
+			pixel-component-format = "ARGB";
+			pixel-component-layer = <0>,<1>,<2>;
+			active-layer = <3>;
+			videomode = "1024x768";
+			800x480_TM050RBH01 {
+				name = "800x480_TM050RBH01";
+				refresh = <60>;
+				xres = <800>;
+				yres = <480>;
+				pixclock-khz = <30000>;
+				left-margin = <40>;
+				right-margin = <40>;
+				upper-margin = <29>;
+				lower-margin = <13>;
+				hsync-len = <48>;
+				vsync-len = <3>;
+				sync = <0>;
+				vmode = <0>;
+			};
+			1280x720 {
+				name = "1280x720";
+				refresh = <60>;
+				xres = <1280>;
+				yres = <720>;
+				pixclock-khz = <74250>;
+				left-margin = <220>;
+				right-margin = <110>;
+				upper-margin = <20>;
+				lower-margin = <5>;
+				hsync-len = <40>;
+				vsync-len = <5>;
+				sync = <0>;
+				vmode = <0>;
+			};
+			1680x1050 {
+				name = "1680x1050";
+				refresh = <60>;
+				xres = <1680>;
+				yres = <1050>;
+				pixclock-khz = <119000>;
+				left-margin = <80>;
+				right-margin = <48>;
+				upper-margin = <21>;
+				lower-margin = <3>;
+				hsync-len = <32>;
+				vsync-len = <6>;
+				sync = <0>;
+				vmode = <0>;
+			};
+			1920x1080 {
+				name = "1920x1080";
+				refresh = <60>;
+				xres = <1920>;
+				yres = <1080>;
+				pixclock-khz = <148500>;
+				left-margin = <148>;
+				right-margin = <88>;
+				upper-margin = <36>;
+				lower-margin = <4>;
+				hsync-len = <44>;
+				vsync-len = <5>;
+				sync = <0>;
+				vmode = <0>;
+			};
+		};
+
+		logibitblt0: logibitblt@40080000 {
+			compatible = "xylon,logibitblt-3.00.a";
+			reg = <0x40080000 0xffff>;
+			interrupts = <90 0>;
+			bb-baseaddr = <0x30000000>;
+			bb-highaddr = <0x37FFFFFF>;
+			use-move-neg = <0>;
+			use-expand = <0>;
+			use-patt-fill = <1>;
+			use-rle = <0>;
+			use-porter-duff = <1>;
+			use-aa-font-expand = <1>;
+			use-global-alpha = <1>;
+		};
+
+		logibmp0: logibmp@40090000 {
+			compatible = "xylon,logibmp-2.01.a";
+			interrupts = <89 0>;
+			reg = <0x40090000 0xffff>;
+			video-stride-width = <11>;
+			use-video-stride-reg = <1>;
+			xy-width = <11>;
+			uv-width = <11>;
+		};
+
+		logi3d0: logi3d@0x400b0000 {
+			compatible = "xylon,logi3d-1.00.a";
+			ip-major-revision = <1>;
+			ip-minor-revision = <0>;
+			ip-patch-revision = <0>;
+			reg3dSize = <1024>;
+			pReg3dPhys = <0x400B0000>;
+			pReg3dVirt = <0>;
+			mem3dSize = <0xB000000>;
+			pMem3dPhys = <0x15000000>;
+			pMem3dVirt = <0>;
+			fbSize = <26542080>;
+			pFbPhys = <0>;
+			pFbVirt = <0>;
+			bufferOffset = <1080>;
+			xyLength = <11>;
+			uvLength = <10>;
+			pLength = <32>;
+			zLength = <16>;
+			stencilLength = <8>;
+			rgbLength = <8>;
+			useMimap = <1>;
+			useMultitexture = <1>;
+		};
+
+		clkgen@40010000 {
+			compatible = "xylon,clkgen-1.01.a";
+			reg = <0x40010000 0xffff>;
+			osc-clk-freq-hz = <100000000>;
+		};
+	};
+};

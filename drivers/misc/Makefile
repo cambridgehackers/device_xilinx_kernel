@@ -47,3 +47,4 @@ obj-$(CONFIG_AB8500_PWM)	+= ab8500-pwm.o
 obj-y				+= lis3lv02d/
 obj-y				+= carma/
 obj-$(CONFIG_SI570)		+= si570.o
+obj-$(CONFIG_ADV7511)	+= adv7511.o
