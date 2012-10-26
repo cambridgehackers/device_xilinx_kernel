@@ -12,7 +12,7 @@
 		reg = <0x00000000 0x20000000>; 
 	};
 	chosen {
-		bootargs = "console=ttyPS0,115200n8 console=tty0 root=/dev/ram rw initrd=0x800000,8M ip=192.168.0.77:::255.255.255.0:ZED:eth0 earlyprintk mem=256M memmap=256M$0x10000000 vmalloc=256M";
+		bootargs = "console=ttyPS0,115200n8 root=/dev/ram rw initrd=0x800000,8M ip=192.168.1.144:::255.255.255.0:ZED:eth0 earlyprintk mem=256M memmap=2256M$0x10000000 vmalloc=256M";
 		linux,stdout-path = "/amba@0/uart@E0001000";
 	};
 
@@ -196,7 +196,7 @@
 			pixel-component-format = "ARGB";
 			pixel-component-layer = <0>,<1>,<2>;
 			active-layer = <3>;
-			videomode = "1024x768";
+			videomode = "1680x1050";
 			800x480_TM050RBH01 {
 				name = "800x480_TM050RBH01";
 				refresh = <60>;
