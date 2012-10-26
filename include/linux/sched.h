@@ -1754,6 +1754,9 @@ static inline void put_task_struct(struct task_struct *t)
 extern void task_times(struct task_struct *p, cputime_t *ut, cputime_t *st);
 extern void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *st);
 
+extern int task_free_register(struct notifier_block *n);
+extern int task_free_unregister(struct notifier_block *n);
+
 /*
  * Per process flags
  */
@@ -1937,7 +1940,6 @@ static inline void disable_sched_clock_irqtime(void) {}
 
 extern unsigned long long
 task_sched_runtime(struct task_struct *task);
-extern unsigned long long thread_group_sched_runtime(struct task_struct *task);
 
 /* sched_exec is called by processes performing an exec */
 #ifdef CONFIG_SMP

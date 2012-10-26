@@ -395,7 +395,7 @@ static void pSeries_lpar_hptab_clear(void)
 		unsigned long ptel;
 	} ptes[4];
 	long lpar_rc;
-	int i, j;
+	unsigned long i, j;
 
 	/* Read in batches of 4,
 	 * invalidate only valid entries not in the VRMA
@@ -745,6 +745,7 @@ void __trace_hcall_entry(unsigned long opcode, unsigned long *args)
 		goto out;
 
 	(*depth)++;
+	preempt_disable();
 	trace_hcall_entry(opcode, args);
 	(*depth)--;
 
@@ -767,6 +768,7 @@ void __trace_hcall_exit(long opcode, unsigned long retval,
 
 	(*depth)++;
 	trace_hcall_exit(opcode, retval, retbuf);
+	preempt_enable();
 	(*depth)--;
 
 out:
