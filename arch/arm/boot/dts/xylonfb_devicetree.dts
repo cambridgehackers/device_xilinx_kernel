@@ -195,7 +195,7 @@
 			pixel-clock-active-high = <1>;
 			pixel-component-format = "ARGB";
 			pixel-component-layer = <0>,<1>,<2>;
-			active-layer = <3>;
+			active-layer = <2>;
 			videomode = "1680x1050";
 			800x480_TM050RBH01 {
 				name = "800x480_TM050RBH01";
