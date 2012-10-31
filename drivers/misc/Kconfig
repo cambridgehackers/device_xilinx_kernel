@@ -545,6 +545,13 @@ config APANIC_PLABEL
 	 If your platform uses a different flash partition label for storing
  	 crashdumps, enter it here.
 
+config XYLON_BITBLIT
+	tristate "Xylon logiBITBLIT driver"
+        select ION
+        default n
+	---help---
+         Driver which allows userspace programs to use logiBITBLIT accelerator.
+
 source "drivers/misc/c2port/Kconfig"
 source "drivers/misc/eeprom/Kconfig"
 source "drivers/misc/cb710/Kconfig"
