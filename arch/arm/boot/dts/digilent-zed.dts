@@ -13,7 +13,7 @@
 	};
 
 	chosen {
-		bootargs = "console=ttyPS0,115200 root=/dev/mmcblk0p2 rw earlyprintk rootfstype=ext4 rootwait devtmpfs.mount=0";
+		bootargs = "console=ttyPS0,115200 root=/dev/ram initrd=0x800000,8M rw earlyprintk ip=:::::eth0:dhcp";
 		linux,stdout-path = "/axi@0/uart@E0001000";
 	};
 	
