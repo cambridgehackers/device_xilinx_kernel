@@ -1,0 +1,25 @@
+
+
+export ARCH=arm
+## I used CodeSourcery 2009q1 toolchain
+export CROSS_COMPILE=arm-none-linux-gnueabi-
+
+## to build for the zedboard reference design from Digilent
+
+    git checkout origin/digilent-android-3.3 -b digilent-android-3.3
+    make digilent_zed_defconfig
+    make
+
+    ## use devicetree_ramdisk.dtb that came with the zedboard
+    ## or build it from the dts file:
+    ./scripts/dtc/dtc -O dtb -I dts -o arch/arm/boot/devicetree_ramdisk.dtb arch/arm/boot/dts/digilent-zed.dts
+
+
+## to build for the ZGPU-ZED_120919 reference design from Xylon
+    git checkout origin/xylon-android-3.0 -b xylon-android-3.0
+    make xylonfb_defconfig
+    make
+
+    ## use devicetree_ramdisk.dtb that came with the zedboard
+    ## or build it from the dts file:
+    ./scripts/dtc/dtc -O dtb -I dts -o arch/arm/boot/devicetree.dtb arch/arm/boot/dts/xylonfb_devicetree.dts
