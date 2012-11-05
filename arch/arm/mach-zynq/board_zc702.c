@@ -26,6 +26,7 @@
 #include <linux/i2c/pca954x.h>
 #include <linux/i2c/pca953x.h>
 #include <linux/i2c/si570.h>
+#include <linux/i2c/adv7511.h>
 #include <linux/gpio.h>
 
 #include <mach/slcr.h>
@@ -158,7 +159,23 @@ static struct i2c_board_info __initdata si570_board_info[] = {
 };
 
 #endif /* CONFIG_SI570 */
-	
+
+#if defined(CONFIG_ADV7511)
+
+/* Initial ADV7511 DVI output format is set to RGB */
+static struct adv7511_platform_data adv7511_0 = {
+	.format = "RGB",
+};
+
+static struct i2c_board_info __initdata adv7511_board_info[] = {
+	{
+		I2C_BOARD_INFO("adv7511", 0x39),
+		.platform_data = &adv7511_0,
+	}
+};
+
+#endif /* CONFIG_ADV7511 */
+
 #if defined(CONFIG_EEPROM_AT24)
 
 static struct i2c_board_info __initdata m24c08_board_info[] = {
@@ -212,31 +229,36 @@ static void __init board_zc702_init(void)
 	gpio_set_value(USB_RST_GPIO, 0);
 	gpio_set_value(USB_RST_GPIO, 1);
 
-#if 	defined(CONFIG_SPI_SPIDEV) || defined(CONFIG_MTD_M25P80)
+#if defined(CONFIG_SPI_SPIDEV) || defined(CONFIG_MTD_M25P80)
 	spi_register_board_info(&xilinx_spipss_0_boardinfo[0], 
 		ARRAY_SIZE(xilinx_spipss_0_boardinfo));
 #endif
 
-#if	defined(CONFIG_I2C_XILINX_PS) && defined(CONFIG_I2C_MUX_PCA954x)
+#if defined(CONFIG_I2C_XILINX_PS) && defined(CONFIG_I2C_MUX_PCA954x)
 	i2c_register_board_info(0, pca954x_i2c_devices,
 				ARRAY_SIZE(pca954x_i2c_devices));
 
-#if	defined(CONFIG_SI570)
+#if defined(CONFIG_SI570)
 	i2c_register_board_info(1, si570_board_info,
 				ARRAY_SIZE(si570_board_info));
 #endif
 
-#if	defined(CONFIG_EEPROM_AT24)
+#if defined(CONFIG_ADV7511)
+	i2c_register_board_info(2, adv7511_board_info,
+				ARRAY_SIZE(adv7511_board_info));
+#endif
+
+#if defined(CONFIG_EEPROM_AT24)
 	i2c_register_board_info(3, m24c08_board_info,
 				ARRAY_SIZE(m24c08_board_info));
 #endif
 
-#if	defined(CONFIG_GPIO_PCA953X)
+#if defined(CONFIG_GPIO_PCA953X)
 	i2c_register_board_info(4, tca6416_board_info,
 				ARRAY_SIZE(tca6416_board_info));
 #endif
 
-#if	defined(CONFIG_RTC_DRV_PCF8563)
+#if defined(CONFIG_RTC_DRV_PCF8563)
 	i2c_register_board_info(5, rtc8564_board_info,
 				ARRAY_SIZE(rtc8564_board_info));
 #endif

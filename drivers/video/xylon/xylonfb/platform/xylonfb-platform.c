@@ -22,13 +22,16 @@
 
 static void xylonfb_get_platform_layer_params(
 	struct xylonfb_platform_layer_params *lparams,
-	struct layer_fix_data *lfdata, int id)
+	struct xylonfb_layer_fix_data *lfdata, int id)
 {
 	lfdata->offset = lparams->offset;
 	lfdata->buffer_offset = lparams->buffer_offset;
+	lfdata->layer_type = lparams->type;
 	lfdata->bpp = lparams->bpp;
 	lfdata->bpp_virt = lparams->bpp;
 	lfdata->alpha_mode = lparams->alpha_mode;
+	if (lfdata->layer_type == LOGICVC_ALPHA_LAYER)
+		lfdata->alpha_mode = LOGICVC_LAYER_ALPHA;
 
 	switch (lfdata->bpp) {
 		case 8:
@@ -58,10 +61,14 @@ static int xylonfb_platform_probe(struct platform_device *pdev)
 	init_data.vmem_base_addr = pdata->vmem_base_addr;
 	init_data.vmem_high_addr = pdata->vmem_high_addr;
 	init_data.vmode_data.ctrl_reg = pdata->ctrl_reg;
+	strcpy(init_data.vmode_data.fb_vmode_name, pdata->vmode);
+	init_data.vmode_data.fb_vmode.refresh = 60;
 	init_data.layers = pdata->num_layers;
 	init_data.active_layer = pdata->active_layer;
 	init_data.bg_layer_bpp = pdata->bg_layer_bpp;
 	init_data.bg_layer_alpha_mode = pdata->bg_layer_alpha_mode;
+	init_data.display_interface_type = pdata->display_interface_type;
+	init_data.flags = pdata->flags;
 	init_data.vmode_params_set = false;
 
 	for (i = 0; i < init_data.layers; i++) {
@@ -69,7 +76,7 @@ static int xylonfb_platform_probe(struct platform_device *pdev)
 			&pdata->layer_params[i],
 			&init_data.lfdata[i], i);
 		init_data.lfdata[i].width = pdata->row_stride;
-		init_data.layer_ctrl[i] = pdata->layer_params[i].ctrl;
+		init_data.layer_ctrl_flags[i] = pdata->layer_params[i].ctrl_flags;
 	}
 
 	return xylonfb_init_driver(&init_data);
@@ -86,43 +93,50 @@ static struct xylonfb_platform_layer_params logicvc_0_layer_params[] = {
 	{
 		.offset = 7290,
 		.buffer_offset = 1080,
+		.type = LOGICVC_RGB_LAYER,
 		.bpp = 32,
 		.alpha_mode = LOGICVC_PIXEL_ALPHA,
-		.ctrl = 0,
+		.ctrl_flags = 0,
 	},
 	{
 		.offset = 4050,
 		.buffer_offset = 1080,
+		.type = LOGICVC_RGB_LAYER,
 		.bpp = 32,
 		.alpha_mode = LOGICVC_LAYER_ALPHA,
-		.ctrl = 0,
+		.ctrl_flags = 0,
 	},
 	{
 		.offset = 0,
 		.buffer_offset = 1080,
+		.type = LOGICVC_RGB_LAYER,
 		.bpp = 32,
 		.alpha_mode = LOGICVC_LAYER_ALPHA,
-		.ctrl = 0,
+		.ctrl_flags = 0,
 	},
 	{
 		.offset = 12960,
 		.buffer_offset = 1080,
+		.type = LOGICVC_RGB_LAYER,
 		.bpp = 8,
 		.alpha_mode = LOGICVC_CLUT_32BPP_ALPHA,
-		.ctrl = 0,
+		.ctrl_flags = 0,
 	},
 };
 
 static struct xylonfb_platform_data logicvc_0_platform_data = {
 	.layer_params = logicvc_0_layer_params,
+	.vmode = "1024x768",
 	.ctrl_reg = (CTRL_REG_INIT | LOGICVC_PIX_ACT_HIGH),
-	.vmem_base_addr = 0x30000000,
-	.vmem_high_addr = 0x3FFFFFFF,
+	.vmem_base_addr = 0x10000000,
+	.vmem_high_addr = 0x1FFFFFFF,
 	.row_stride = 2048,
 	.num_layers = ARRAY_SIZE(logicvc_0_layer_params),
-	.active_layer = 3,
-	.bg_layer_bpp = 32,
+	.active_layer = 0,
+	.bg_layer_bpp = 0,
 	.bg_layer_alpha_mode = LOGICVC_LAYER_ALPHA,
+	.display_interface_type = (LOGICVC_DI_PARALLEL << 4) | (LOGICVC_DCS_YUV422),
+	.flags = 0,
 };
 
 static struct resource logicvc_0_resource[] = {
@@ -132,8 +146,8 @@ static struct resource logicvc_0_resource[] = {
 		.flags = IORESOURCE_MEM,
 	},
 	{
-		.start = 90,
-		.end = 90,
+		.start = 91,
+		.end = 91,
 		.flags = IORESOURCE_IRQ,
 	},
 };

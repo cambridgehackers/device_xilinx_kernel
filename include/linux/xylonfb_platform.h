@@ -25,18 +25,22 @@ struct xylonfb_platform_layer_params
 	unsigned int offset;
 	/* Layer buffer memory offset in lines */
 	unsigned short buffer_offset;
+	/* Layer type */
+	unsigned char type;
 	/* Layer bits per pixel */
 	unsigned char bpp;
 	/* Layer alpha mode */
 	unsigned char alpha_mode;
-	/* Layer control register value */
-	unsigned char ctrl;
+	/* Layer control flags */
+	unsigned char ctrl_flags;
 };
 
 /* Framebuffer driver platform data structure */
 struct xylonfb_platform_data
 {
 	struct xylonfb_platform_layer_params *layer_params;
+	/* logiCVC video mode */
+	char *vmode;
 	/* logiCVC Control Register value */
 	u32 ctrl_reg;
 	/* Physical starting address of the video memory */
@@ -53,6 +57,11 @@ struct xylonfb_platform_data
 	unsigned char bg_layer_bpp;
 	/* Background layer alpha mode */
 	unsigned char bg_layer_alpha_mode;
+	/* Display interface and color space type */
+	/* higher 4 bits: display interface, lower 4 bits: display color space */
+	unsigned char display_interface_type;
+	/* logiCVC specific flags */
+	unsigned short flags;
 };
 
 #endif /* __XYLON_FB_PLATFORM_H__ */

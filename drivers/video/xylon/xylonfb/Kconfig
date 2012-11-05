@@ -43,6 +43,11 @@ config FB_XYLON_ZYNQ_PS_PIXCLK
 	help
 	  Support for pixel clock generation from Zynq PS internal clock generator.
 
+config FB_XYLON_LOGICLK_PIXCLK
+	bool "Xylon logiCLK pixel clock"
+	help
+	  Support for pixel clock generation from Xylon logiCLK FGPA IP core.
+
 config FB_XYLON_ZC702_PIXCLK
 	bool "ZC702 board pixel clock"
 	select SYSFS

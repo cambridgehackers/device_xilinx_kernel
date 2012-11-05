@@ -24,6 +24,25 @@
 
 #define USB_RST_GPIO	7
 
+#include <linux/i2c/adv7511.h>
+
+
+#if defined(CONFIG_ADV7511)
+
+/* Initial ADV7511 DVI output format is set to RGB */
+static struct adv7511_platform_data adv7511_0 = {
+	.format = "RGB",
+};
+
+static struct i2c_board_info __initdata adv7511_board_info[] = {
+	{
+		I2C_BOARD_INFO("adv7511", 0x39),
+		.platform_data = &adv7511_0,
+	}
+};
+
+#endif /* CONFIG_ADV7511 */
+
 extern struct sys_timer xttcpss_sys_timer;
 
 static void __init board_zc770_init(void)
@@ -33,6 +52,11 @@ static void __init board_zc770_init(void)
 	 * specific
 	 */
 	xilinx_init_machine();
+
+#if defined(CONFIG_ADV7511)
+	i2c_register_board_info(0, adv7511_board_info,
+				ARRAY_SIZE(adv7511_board_info));
+#endif
 
 	/* Reset USB by toggling MIO7.
 	 * Only XM010 (DC1) daughter card resets USB this way,

@@ -41,6 +41,37 @@ static void set_ctrl_reg(struct xylonfb_init_data *init_data,
 	init_data->vmode_data.ctrl_reg = ctrl;
 }
 
+static int xylonfb_parse_hw_info(struct device_node *np,
+	struct xylonfb_init_data *init_data)
+{
+	u32 const *prop;
+	int size;
+
+	prop = of_get_property(np, "display-interface", &size);
+	if (!prop) {
+		pr_err("Error xylonfb getting display interface\n");
+		return -EINVAL;
+	}
+	init_data->display_interface_type = be32_to_cpup(prop) << 4;
+
+	prop = of_get_property(np, "display-color-space", &size);
+	if (!prop) {
+		pr_err("Error xylonfb getting display color space\n");
+		return -EINVAL;
+	}
+	init_data->display_interface_type |= be32_to_cpup(prop);
+
+	prop = of_get_property(np, "readable-regs", &size);
+	if (!prop) {
+		pr_warning("xylonfb registers not readable\n");
+	} else {
+		if (be32_to_cpup(prop))
+			init_data->flags |= LOGICVC_READABLE_REGS;
+	}
+
+	return 0;
+}
+
 static int xylonfb_parse_vram_info(struct device_node *np,
 	unsigned long *vmem_base_addr, unsigned long *vmem_high_addr)
 {
@@ -79,34 +110,34 @@ static int xylonfb_parse_layer_info(struct device_node *np,
 	}
 	layers = be32_to_cpup(prop);
 
+	bg_bpp = 0;
+	bg_alpha_mode = 0;
 	prop = of_get_property(np, "use-background", &size);
 	if (!prop) {
-		pr_err("Error getting use background\n");
-		return -EINVAL;
-	}
-	if (be32_to_cpup(prop) == 1) {
-		layers--;
-
-		sprintf(bg_layer_name, "layer-%d-data-width", layers);
-		prop = of_get_property(np, bg_layer_name, &size);
-		if (!prop)
-			bg_bpp = 16;
-		else
-			bg_bpp = be32_to_cpup(prop);
-		if (bg_bpp == 24)
-			bg_bpp = 32;
-
-		sprintf(bg_layer_name, "layer-%d-alpha-mode", layers);
-		prop = of_get_property(np, bg_layer_name, &size);
-		if (!prop) {
-			bg_alpha_mode = LOGICVC_LAYER_ALPHA;
-		} else {
-			bg_alpha_mode = be32_to_cpup(prop);
-		}
+		pr_warning("xylonfb no BG layer\n");
 	} else {
-		bg_bpp = 0;
-		bg_alpha_mode = 0;
-		pr_debug("xylonfb no BG layer\n");
+		if (be32_to_cpup(prop) == 1) {
+			layers--;
+
+			sprintf(bg_layer_name, "layer-%d-data-width", layers);
+			prop = of_get_property(np, bg_layer_name, &size);
+			if (!prop)
+				bg_bpp = 16;
+			else
+				bg_bpp = be32_to_cpup(prop);
+			if (bg_bpp == 24)
+				bg_bpp = 32;
+
+			sprintf(bg_layer_name, "layer-%d-alpha-mode", layers);
+			prop = of_get_property(np, bg_layer_name, &size);
+			if (!prop) {
+				bg_alpha_mode = LOGICVC_LAYER_ALPHA;
+			} else {
+				bg_alpha_mode = be32_to_cpup(prop);
+			}
+		} else {
+			pr_debug("xylonfb no BG layer\n");
+		}
 	}
 
 	init_data->layers = (unsigned char)layers;
@@ -154,7 +185,7 @@ static int xylonfb_parse_vmode_info(struct device_node *np,
 			if (prop) {
 				while(size > 0) {
 					tmp = be32_to_cpup(prop);
-					init_data->layer_ctrl[tmp] = LOGICVC_SWAP_RB;
+					init_data->layer_ctrl_flags[tmp] = LOGICVC_SWAP_RB;
 					prop++;
 					size -= sizeof(prop);
 				}
@@ -273,7 +304,7 @@ static int xylonfb_parse_vmode_info(struct device_node *np,
 }
 
 static int xylonfb_parse_layer_params(struct device_node *np,
-	int id, struct layer_fix_data *lfdata)
+	int id, struct xylonfb_layer_fix_data *lfdata)
 {
 	u32 const *prop;
 	int size;
@@ -303,6 +334,15 @@ static int xylonfb_parse_layer_params(struct device_node *np,
 	else
 		lfdata->width = be32_to_cpup(prop);
 
+	sprintf(layer_property_name, "layer-%d-type", id);
+	prop = of_get_property(np, layer_property_name, &size);
+	if (!prop) {
+		pr_err("Error getting layer type\n");
+		return -EINVAL;
+	} else {
+		lfdata->layer_type = be32_to_cpup(prop);
+	}
+
 	sprintf(layer_property_name, "layer-%d-alpha-mode", id);
 	prop = of_get_property(np, layer_property_name, &size);
 	if (!prop) {
@@ -310,6 +350,9 @@ static int xylonfb_parse_layer_params(struct device_node *np,
 		return -EINVAL;
 	} else {
 		lfdata->alpha_mode = be32_to_cpup(prop);
+		/* If logiCVC layer is Alpha layer, override DT value */
+		if (lfdata->layer_type == LOGICVC_ALPHA_LAYER)
+			lfdata->alpha_mode = LOGICVC_LAYER_ALPHA;
 	}
 
 	sprintf(layer_property_name, "layer-%d-data-width", id);
@@ -349,6 +392,9 @@ static int xylonfb_of_probe(struct platform_device *pdev)
 
 	init_data.pdev = pdev;
 
+	rc = xylonfb_parse_hw_info(pdev->dev.of_node, &init_data);
+	if (rc)
+		return rc;
 	rc = xylonfb_parse_vram_info(pdev->dev.of_node,
 		&init_data.vmem_base_addr, &init_data.vmem_high_addr);
 	if (rc)
@@ -378,6 +424,7 @@ static int xylonfb_of_remove(struct platform_device *pdev)
 
 static struct of_device_id xylonfb_of_match[] __devinitdata = {
 	{ .compatible = "xylon,logicvc-2.05.c" },
+	{ .compatible = "xylon,logicvc-3.00.a" },
 	{/* end of table */},
 };
 MODULE_DEVICE_TABLE(of, xylonfb_of_match);

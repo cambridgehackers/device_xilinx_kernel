@@ -27,6 +27,9 @@
 #undef HW_PIXEL_CLOCK_CHANGE_SUPPORTED
 #endif
 #define HW_PIXEL_CLOCK_CHANGE_SUPPORTED 0
+
+#include <linux/kernel.h>
+
 int xylonfb_hw_pixclk_set(unsigned long pixclk_khz)
 {
 	pr_info("Pixel clock change not supported\n");
@@ -34,6 +37,10 @@ int xylonfb_hw_pixclk_set(unsigned long pixclk_khz)
 }
 
 #elif defined(CONFIG_FB_XYLON_ZYNQ_PS_PIXCLK)
+
+#include <asm/io.h>
+#include <linux/kernel.h>
+#include <linux/errno.h>
 
 int xylonfb_hw_pixclk_set(unsigned long pixclk_khz)
 {
@@ -108,6 +115,79 @@ int xylonfb_hw_pixclk_set(unsigned long pixclk_khz)
 	iounmap(rst_reg);
 	iounmap(clk_regs);
 	iounmap(slcr_regs);
+
+	return 0;
+}
+
+#elif defined(CONFIG_FB_XYLON_LOGICLK_PIXCLK)
+
+#include <asm/io.h>
+#include <linux/kernel.h>
+#include <linux/errno.h>
+#include <linux/delay.h>
+#ifdef CONFIG_OF
+/* For open firmware. */
+#include <linux/of_address.h>
+#include <linux/of_device.h>
+#include <linux/of_platform.h>
+#endif
+#include "logiclk.h"
+
+int xylonfb_hw_pixclk_set(unsigned long pixclk_khz)
+{
+#ifdef CONFIG_OF
+	struct device_node *dn;
+	const unsigned int *val;
+	int len;
+#endif
+	u32 *logiclk_regs;
+	struct logiclk_freq_out freq_out;
+	unsigned long logiclk[LOGICLK_REGS];
+	unsigned long address, size, osc_freq_hz;
+	int i;
+
+	address = 0x40010000;
+	size = LOGICLK_REGS * sizeof(u32);
+	osc_freq_hz = 100000000;
+
+#ifdef CONFIG_OF
+	dn = of_find_node_by_name(NULL, "logiclk");
+	if (dn) {
+		val = of_get_property(dn, "reg", &len);
+		address = be32_to_cpu(val[0]);
+		size = be32_to_cpu(val[1]);
+		val = of_get_property(dn, "osc-clk-freq-hz", &len);
+		osc_freq_hz = be32_to_cpu(val[0]);
+	}
+#endif
+
+	logiclk_regs = (u32 *)ioremap_nocache(address, size);
+	if (!logiclk_regs) {
+		pr_err("Error mapping logiCLK\n");
+		return -EBUSY;
+	}
+
+	for (i = 0; i < LOGICLK_OUTPUTS; i++)
+		freq_out.freq_out_hz[i] = pixclk_khz * 1000;
+
+	logiclk_calc_regs(&freq_out, osc_freq_hz, logiclk);
+
+	writel(1, logiclk_regs+LOGICLK_RST_REG_OFF);
+	udelay(10);
+	writel(0, logiclk_regs+LOGICLK_RST_REG_OFF);
+
+	for (i = 0; i < LOGICLK_REGS; i++)
+		writel(logiclk[i], logiclk_regs+LOGICLK_PLL_MANUAL_REG_OFF+i);
+
+	while(1) {
+		if (readl(logiclk_regs+LOGICLK_PLL_REG_OFF) & LOGICLK_PLL_RDY) {
+			writel((LOGICLK_PLL_REG_EN | LOGICLK_PLL_EN),
+				logiclk_regs+LOGICLK_PLL_REG_OFF);
+			break;
+		}
+	}
+
+	iounmap(logiclk_regs);
 
 	return 0;
 }
