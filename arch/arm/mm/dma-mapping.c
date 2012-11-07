@@ -49,10 +49,10 @@
  * before transfers and delay cache invalidation until transfer completion.
  *
  */
-static void __dma_page_cpu_to_dev(struct page *, unsigned long,
-		size_t, enum dma_data_direction);
-static void __dma_page_dev_to_cpu(struct page *, unsigned long,
-		size_t, enum dma_data_direction);
+void __dma_page_cpu_to_dev(struct page *, unsigned long,
+                           size_t, enum dma_data_direction);
+void __dma_page_dev_to_cpu(struct page *, unsigned long,
+                           size_t, enum dma_data_direction);
 
 /**
  * arm_dma_map_page - map a portion of a page for streaming DMA
@@ -835,8 +835,8 @@ static void dma_cache_maint_page(struct page *page, unsigned long offset,
  * platforms with CONFIG_DMABOUNCE.
  * Use the driver DMA support - see dma-mapping.h (dma_sync_*)
  */
-static void __dma_page_cpu_to_dev(struct page *page, unsigned long off,
-	size_t size, enum dma_data_direction dir)
+void __dma_page_cpu_to_dev(struct page *page, unsigned long off,
+                           size_t size, enum dma_data_direction dir)
 {
 	unsigned long paddr;
 
@@ -851,8 +851,8 @@ static void __dma_page_cpu_to_dev(struct page *page, unsigned long off,
 	/* FIXME: non-speculating: flush on bidirectional mappings? */
 }
 
-static void __dma_page_dev_to_cpu(struct page *page, unsigned long off,
-	size_t size, enum dma_data_direction dir)
+void __dma_page_dev_to_cpu(struct page *page, unsigned long off,
+                           size_t size, enum dma_data_direction dir)
 {
 	unsigned long paddr = page_to_phys(page) + off;
 
