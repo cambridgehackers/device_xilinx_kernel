@@ -1488,6 +1488,10 @@ int xylonfb_init_driver(struct xylonfb_init_data *init_data)
 	reg_range = reg_res->end - reg_res->start;
 	reg_base_virt = ioremap_nocache(reg_base_phys, reg_range);
 
+#ifdef CONFIG_ION
+                xylonfb_ion_probe(common_data);
+#endif
+
 	/* load layer parameters for all layers */
 	for (i = 0; i < layers; i++)
 		regfb[i] = -1;

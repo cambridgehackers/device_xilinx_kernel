@@ -35,6 +35,7 @@
 #define FB_RESERVED_0x100    0x100
 
 
+#define DEBUG
 #ifdef DEBUG
 #define driver_devel(format, ...) \
 	do { \
@@ -107,6 +108,10 @@ struct xylonfb_common_data {
 	struct xylonfb_sync xylonfb_vsync;
 	struct xylonfb_vmode_data vmode_data;
 	struct xylonfb_vmode_data vmode_data_current;
+#ifdef CONFIG_ION
+        struct ion_heap *ion_heap;
+        struct ion_device *ion_dev;
+#endif
 	/* Delay after applying display power and
 		before applying display signals */
 	unsigned int power_on_delay;
@@ -163,5 +168,9 @@ extern int xylonfb_init_driver(struct xylonfb_init_data *init_data);
 extern int xylonfb_deinit_driver(struct platform_device *pdev);
 extern int xylonfb_ioctl(struct fb_info *fbi,
 	unsigned int cmd, unsigned long arg);
+
+#ifdef CONFIG_ION
+int xylonfb_ion_probe(struct xylonfb_common_data *common_data);
+#endif
 
 #endif /* __XYLON_FB_DATA_H__ */
