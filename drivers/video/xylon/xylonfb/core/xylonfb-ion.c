@@ -21,25 +21,41 @@
 
 int xylonfb_ion_probe(struct xylonfb_common_data *common_data)
 {
+        int i;
+        struct ion_platform_heap heap_data;
+
         driver_devel("%s:%d\n", __FUNCTION__, __LINE__);
 
         common_data->ion_dev = ion_device_create(NULL);
         driver_devel("%s:%d ion_dev=%p\n",
                      __FUNCTION__, __LINE__, common_data->ion_dev);
 
-        struct ion_platform_heap *heap_data =
-                kzalloc(sizeof(struct ion_platform_heap), GFP_KERNEL);
-        heap_data->type = ION_HEAP_TYPE_SYSTEM_CONTIG;
-        heap_data->id = 1;
-        heap_data->name = "xylonfb-ion-heap";
-        heap_data->base = 0x18000000; // not used for system_contig
-        heap_data->size = 0x08000000; // not used for system_contig
+        for (i = 0; i < 3; i++) {
+                char name[22];
+                snprintf(name, sizeof(name), "xylonfb-ion-heap-%d", i);
+                switch (i) {
+                case 0:
+                        heap_data.type = ION_HEAP_TYPE_CARVEOUT;
+                        break;
+                case 1:
+                        heap_data.type = ION_HEAP_TYPE_SYSTEM_CONTIG;
+                        break;
+                default:
+                        heap_data.type = ION_HEAP_TYPE_SYSTEM;
+                        break;
+                }
+                heap_data.id = i;
+                heap_data.name = name;
+                // fixme use devicetree
+                heap_data.base = 0x18000000; // not used for system_contig or system
+                heap_data.size = 0x08000000; // not used for system_contig or system
 
-        common_data->ion_heap = ion_heap_create(heap_data);
-        driver_devel("%s:%d ion_heap=%p ops=%p\n",
-                     __FUNCTION__, __LINE__, common_data->ion_heap,
-                     common_data->ion_heap ? common_data->ion_heap->ops : 0);
+                common_data->ion_heap[i] = ion_heap_create(&heap_data);
+                driver_devel("%s:%d ion_heap=%p ops=%p\n",
+                             __FUNCTION__, __LINE__, common_data->ion_heap[i],
+                             common_data->ion_heap[i] ? common_data->ion_heap[i]->ops : 0);
 
-        ion_device_add_heap(common_data->ion_dev, common_data->ion_heap);
+                ion_device_add_heap(common_data->ion_dev, common_data->ion_heap[i]);
+        }
         return 0;
 }

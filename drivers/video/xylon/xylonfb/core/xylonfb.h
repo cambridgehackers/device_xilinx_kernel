@@ -109,7 +109,7 @@ struct xylonfb_common_data {
 	struct xylonfb_vmode_data vmode_data;
 	struct xylonfb_vmode_data vmode_data_current;
 #ifdef CONFIG_ION
-        struct ion_heap *ion_heap;
+        struct ion_heap *ion_heap[3];
         struct ion_device *ion_dev;
 #endif
 	/* Delay after applying display power and
