@@ -19,6 +19,8 @@
 #include "../../../../gpu/ion/ion_priv.h"
 #include "xylonfb.h"
 
+struct ion_device *xylon_ion_device;
+
 int xylonfb_ion_probe(struct xylonfb_common_data *common_data)
 {
         int i;
@@ -27,6 +29,7 @@ int xylonfb_ion_probe(struct xylonfb_common_data *common_data)
         driver_devel("%s:%d\n", __FUNCTION__, __LINE__);
 
         common_data->ion_dev = ion_device_create(NULL);
+        xylon_ion_device = common_data->ion_dev;
         driver_devel("%s:%d ion_dev=%p\n",
                      __FUNCTION__, __LINE__, common_data->ion_dev);
 
