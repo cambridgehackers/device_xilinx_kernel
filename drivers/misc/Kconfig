@@ -560,4 +560,11 @@ config NEED_XILINX_LLDMA
 
 config NEED_XILINX_IPIF
   bool
+
+config XYLON_LOGI2D3D
+	bool "Xylon logi2D3D driver"
+        default n
+        help
+          Driver for Xylon logi2D3D FPGA components.
+
 endmenu
