@@ -35,7 +35,6 @@
 #define FB_RESERVED_0x100    0x100
 
 
-#define DEBUG
 #ifdef DEBUG
 #define driver_devel(format, ...) \
 	do { \
