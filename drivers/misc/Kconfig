@@ -567,4 +567,11 @@ config XYLON_LOGI2D3D
         help
           Driver for Xylon logi2D3D FPGA components.
 
+config USHW_BRIDGE
+	bool "Generic userspace hardware bridge driver"
+        default n
+        select OF
+        help
+          Generic userspace hardware bridge
+
 endmenu
