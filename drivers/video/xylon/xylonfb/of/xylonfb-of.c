@@ -78,14 +78,14 @@ static int xylonfb_parse_vram_info(struct device_node *np,
 	u32 const *prop;
 	int size;
 
-	prop = of_get_property(np, "vmem-baseaddr", &size);
+	prop = of_get_property(np, "xlnx,vmem-baseaddr", &size);
 	if (!prop) {
 		pr_err("Error xylonfb getting VRAM address begin\n");
 		return -EINVAL;
 	}
 	*vmem_base_addr = be32_to_cpup(prop);
 
-	prop = of_get_property(np, "vmem-highaddr", &size);
+	prop = of_get_property(np, "xlnx,vmem-highaddr", &size);
 	if (!prop) {
 		pr_err("Error xylonfb getting VRAM address end\n");
 		return -EINVAL;
@@ -103,7 +103,7 @@ static int xylonfb_parse_layer_info(struct device_node *np,
 	int size;
 	char bg_layer_name[25];
 
-	prop = of_get_property(np, "num-of-layers", &size);
+	prop = of_get_property(np, "xlnx,num-of-layers", &size);
 	if (!prop) {
 		pr_err("Error getting number of layers\n");
 		return -EINVAL;
@@ -166,22 +166,22 @@ static int xylonfb_parse_vmode_info(struct device_node *np,
 	}
 
 	pix_data_invert = 0;
-	prop = of_get_property(dn, "pixel-data-invert", &size);
+	prop = of_get_property(dn, "xlnx,pixel-data-invert", &size);
 	if (!prop)
 		pr_err("Error getting pixel data invert\n");
 	else
 		pix_data_invert = be32_to_cpup(prop);
 	pix_clk_act_high = 0;
-	prop = of_get_property(dn, "pixel-clock-active-high", &size);
+	prop = of_get_property(dn, "xlnx,pixel-clock-active-high", &size);
 	if (!prop)
 		pr_err("Error getting pixel active edge\n");
 	else
 		pix_clk_act_high = be32_to_cpup(prop);
 
-	prop = of_get_property(dn, "pixel-component-format", &size);
+	prop = of_get_property(dn, "xlnx,pixel-component-format", &size);
 	if (prop) {
 		if (!strcmp("ABGR", (char *)prop)) {
-			prop = of_get_property(dn, "pixel-component-layer", &size);
+			prop = of_get_property(dn, "xlnx,pixel-component-layer", &size);
 			if (prop) {
 				while(size > 0) {
 					tmp = be32_to_cpup(prop);
