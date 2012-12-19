@@ -535,12 +535,12 @@ config XYLON_LOGI2D3D
         help
           Driver for Xylon logi2D3D FPGA components.
 
-config USHW_BRIDGE
-	bool "Generic userspace hardware bridge driver"
+config PORTAL
+	bool "Generic hardware portal driver"
         default n
         select OF
         help
-          Generic userspace hardware bridge
+          Generic userspace hardware portal
 
 source "drivers/misc/c2port/Kconfig"
 source "drivers/misc/eeprom/Kconfig"
