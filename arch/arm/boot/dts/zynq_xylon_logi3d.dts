@@ -105,13 +105,17 @@
 			#address-cells = <0x1>;
 			#size-cells = <0x0>;
 
-			phy0: phy@0 {
-				compatible = "marvell,88e1510";
-				device_type = "ethernet-phy";
-				reg = <0x0>;
-				marvell,reg-init = <0x03 0x10 0xFF00 0x1E 0x03 0x11 0xFFF0 0x0A>;
-				linux,phandle = <0x2>;
-			};
+                        mdio {
+				#address-cells = <1>;
+				#size-cells = <0>;
+                                phy0: phy@0 {
+                                        compatible = "marvell,88e1510";
+                                        device_type = "ethernet-phy";
+                                        reg = <0x0>;
+                                        marvell,reg-init = <0x03 0x10 0xFF00 0x1E 0x03 0x11 0xFFF0 0x0A>;
+                                        linux,phandle = <0x2>;
+                                };
+                        };
 		};
 
 		i2c0: i2c@e0004000 {
@@ -125,6 +129,13 @@
 
 			#address-cells = <1>;
 			#size-cells = <0>;
+                        adv7511@39 {
+                                #address-cells = <1>;
+                                #size-cells = <0>;
+                                reg = <39>;
+                                compatible = "adv7511";
+                                format = "RGB";
+                        };
 		};
 
 		sdhci@e0100000 {
@@ -255,7 +266,7 @@
 			pixel-component-format = "ARGB";
 			pixel-component-layer = <0>,<1>,<2>;
 			active-layer = <2>;
-			videomode = "1024x768";
+			videomode = "1680x1050";
 			800x480_TM050RBH01 {
 				name = "800x480_TM050RBH01";
 				refresh = <60>;
