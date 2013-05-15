@@ -23,6 +23,7 @@
 #include <linux/xilinx_devices.h>
 #include <mach/dma.h>
 #include <asm/pmu.h>
+#include <linux/clk.h>
 
 #define DMAC0_BASE		(0xF8003000)
 #define IRQ_DMAC0_ABORT		45
@@ -185,6 +186,21 @@ void __init platform_device_init(void)
 			xilinx_add_pdevlist(*devptr);
 	}
 
+#if 1
+{
+     struct clk *devclk = clk_get_sys("FPGA1", NULL);
+printk(KERN_INFO "[%s:%d] devclk %p\n", __FUNCTION__, __LINE__, devclk);
+     if (devclk) {
+         //long rate = clk_round_rate(devclk, 143000000);
+         long rate = clk_round_rate(devclk, 167000000);
+printk(KERN_INFO "[%s:%d] actual rate %ld\n", __FUNCTION__, __LINE__, rate);
+         if (clk_set_rate(devclk, rate)) {
+printk(KERN_INFO "[%s:%d] err\n", __FUNCTION__, __LINE__);
+         }
+     }
+}
+#endif
+printk(KERN_INFO "[%s:%d]\n", __FUNCTION__, __LINE__);
 //#if defined CONFIG_SPI_SPIDEV || defined CONFIG_MTD_M25P80
 //	spi_register_board_info(&xilinx_qspipss_0_boardinfo, 1);
 //#endif
