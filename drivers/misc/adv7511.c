@@ -27,6 +27,7 @@
 
 #define FORMAT_RGB "RGB"
 #define FORMAT_YCbCr "YCbCr"
+#define FORMAT_DISCONNECTED "disconnected"
 
 struct adv7511_config_data {
 	u8 address;
@@ -191,6 +192,9 @@ static ssize_t set_format_attr(struct device *dev,
 	} else if (!strcmp(data->format, FORMAT_YCbCr)) {
 		data->adv7511_cfg_data = adv7511_ycbcr_config;
 		data->adv7511_cfg_size = ARRAY_SIZE(adv7511_ycbcr_config);
+	} else if (!strcmp(data->format, FORMAT_DISCONNECTED)) {
+		data->adv7511_cfg_data = 0;
+		data->adv7511_cfg_size = 0;
 	} else {
 		ret = -EINVAL;
 		pr_err("%s string error!\n", client->driver->id_table->name);
