@@ -232,7 +232,7 @@ int adv7511_set_format(struct device *dev, int type)
 }
 EXPORT_SYMBOL(adv7511_set_format);
 
-static DEVICE_ATTR(format, (S_IWUSR | S_IRUGO),
+static DEVICE_ATTR(format, (S_IWUGO | S_IRUGO),
 	show_format_attr, set_format_attr);
 
 static struct attribute *adv7511_attr[] = {
