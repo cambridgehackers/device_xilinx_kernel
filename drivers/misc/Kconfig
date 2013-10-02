@@ -536,7 +536,7 @@ config XYLON_LOGI2D3D
           Driver for Xylon logi2D3D FPGA components.
 
 config PORTAL
-	bool "Generic hardware portal driver"
+	tristate "Generic hardware portal driver"
         default n
         select OF
         help
