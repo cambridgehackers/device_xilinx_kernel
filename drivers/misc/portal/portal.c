@@ -143,23 +143,22 @@ struct ion_buffer {
 	pid_t pid;
 };
 
-static int ion_system_contig_heap_map_user(struct ion_buffer *buffer,
+
+static int ion_system_heap_map_user(struct ion_buffer *buffer,
 					   struct vm_area_struct *vma);
 
-static int ion_system_contig_heap_allocate(struct ion_buffer *buffer,
+static int ion_system_heap_allocate(struct ion_buffer *buffer,
 					   unsigned long len,
 					   unsigned long align);
 
-static struct sg_table *ion_system_contig_heap_map_dma(struct ion_buffer *buffer);
+static struct sg_table *ion_system_heap_map_dma(struct ion_buffer *buffer);
 
-static void ion_system_contig_heap_free(struct ion_buffer *buffer);
+static void ion_system_heap_free(struct ion_buffer *buffer);
 
 static void ion_system_heap_unmap_kernel(struct ion_buffer *buffer);
 
-
-static void ion_system_contig_heap_unmap_dma(struct ion_buffer *buffer);
-
 static void *ion_system_heap_map_kernel(struct ion_buffer *buffer);
+
 
 
 /* this function should only be called while dev->lock is held */
@@ -204,7 +203,12 @@ static struct ion_buffer *ion_buffer_create(struct ion_device *dev,
 		return ERR_PTR(-ENOMEM);
 	kref_init(&buffer->ref);
 
-	ret = ion_system_contig_heap_allocate(buffer, len, align);
+	if (false){
+	  ret = ion_system_heap_allocate(buffer, len, align);
+	} else {
+	  ret = ion_system_heap_allocate(buffer, len, align);
+	}
+
 	if (ret) {
 		kfree(buffer);
 		return ERR_PTR(ret);
@@ -213,9 +217,9 @@ static struct ion_buffer *ion_buffer_create(struct ion_device *dev,
 	buffer->dev = dev;
 	buffer->size = len;
 
-	table = ion_system_contig_heap_map_dma(buffer);
+	table = ion_system_heap_map_dma(buffer);
 	if (IS_ERR_OR_NULL(table)) {
-		ion_system_contig_heap_free(buffer);
+		ion_system_heap_free(buffer);
 		kfree(buffer);
 		return ERR_PTR(PTR_ERR(table));
 	}
@@ -247,8 +251,7 @@ static void ion_buffer_destroy(struct kref *kref)
 
 	if (WARN_ON(buffer->kmap_cnt > 0))
 		ion_system_heap_unmap_kernel(buffer);
-	ion_system_contig_heap_unmap_dma(buffer);
-	ion_system_contig_heap_free(buffer);
+	ion_system_heap_free(buffer);
 	mutex_lock(&dev->buffer_lock);
 	rb_erase(&buffer->node, &dev->buffers);
 	mutex_unlock(&dev->buffer_lock);
@@ -537,8 +540,6 @@ static void ion_client_destroy(struct ion_client *client)
 	kfree(client);
 }
 
-
-
 static struct sg_table *ion_map_dma_buf(struct dma_buf_attachment *attachment,
 					enum dma_data_direction direction)
 {
@@ -571,7 +572,7 @@ static int ion_mmap(struct dma_buf *dmabuf, struct vm_area_struct *vma)
 
 	mutex_lock(&buffer->lock);
 	/* now map it to userspace */
-	ret = ion_system_contig_heap_map_user(buffer, vma);
+	ret = ion_system_heap_map_user(buffer, vma);
 	mutex_unlock(&buffer->lock);
 
 	if (ret)
@@ -737,57 +738,140 @@ static void ion_device_destroy(struct ion_device *dev)
 //
 /////////////////////////////////////////////////////////////
 
+
 /////////////////////////////////////////////////////////////
 // copied from ion_system_heap.c
 
-static int ion_system_contig_heap_allocate(struct ion_buffer *buffer,
-					   unsigned long len,
-					   unsigned long align)
+static unsigned int high_order_gfp_flags = (GFP_HIGHUSER | __GFP_ZERO |
+					    __GFP_NOWARN | __GFP_NORETRY |
+					    __GFP_NO_KSWAPD) & ~__GFP_WAIT;
+static unsigned int low_order_gfp_flags  = (GFP_HIGHUSER | __GFP_ZERO |
+					 __GFP_NOWARN);
+static const unsigned int orders[] = {8, 4, 0};
+static const int num_orders = ARRAY_SIZE(orders);
+
+static unsigned int order_to_size(int order)
 {
-	buffer->priv_virt = kzalloc(len, GFP_KERNEL);
-	if (!buffer->priv_virt)
-		return -ENOMEM;
-	return 0;
+	return PAGE_SIZE << order;
 }
 
-static void ion_system_contig_heap_free(struct ion_buffer *buffer)
+
+static struct page *alloc_buffer_page(struct ion_buffer *buffer,
+				      unsigned long order)
 {
-	kfree(buffer->priv_virt);
+	struct page *page;
+
+	gfp_t gfp_flags = low_order_gfp_flags;
+	
+	if (order > 4)
+	  gfp_flags = high_order_gfp_flags;
+	page = alloc_pages(gfp_flags, order);
+	if (!page)
+	  return 0;
+
+	if (!page)
+	  return 0;
+
+	return page;
 }
 
-static struct sg_table *ion_system_contig_heap_map_dma(struct ion_buffer *buffer)
+struct page_info {
+        struct page *page;
+        unsigned long order;
+        struct list_head list;
+};
+
+static struct page_info *alloc_largest_available(struct ion_buffer *buffer,
+						 unsigned long size,
+						 unsigned int max_order)
+{
+	struct page *page;
+	struct page_info *info;
+	int i;
+
+	for (i = 0; i < num_orders; i++) {
+		if (size < order_to_size(orders[i]))
+			continue;
+		if (max_order < orders[i])
+			continue;
+
+		page = alloc_buffer_page(buffer, orders[i]);
+		if (!page)
+			continue;
+
+		info = kmalloc(sizeof(struct page_info), GFP_KERNEL);
+		info->page = page;
+		info->order = orders[i];
+		return info;
+	}
+	return NULL;
+}
+
+
+static void free_buffer_page(struct ion_buffer *buffer, 
+			     struct page *page,
+			     unsigned int order)
+{
+  __free_pages(page, order);
+}
+
+
+static int ion_system_heap_allocate(struct ion_buffer *buffer,
+				    unsigned long size, 
+				    unsigned long align)
 {
 	struct sg_table *table;
+	struct scatterlist *sg;
 	int ret;
+	struct list_head pages;
+	struct page_info *info, *tmp_info;
+	int i = 0;
+	long size_remaining = PAGE_ALIGN(size);
+	unsigned int max_order = orders[0];
 
-	table = kzalloc(sizeof(struct sg_table), GFP_KERNEL);
-	if (!table)
-		return ERR_PTR(-ENOMEM);
-	ret = sg_alloc_table(table, 1, GFP_KERNEL);
-	if (ret) {
-		kfree(table);
-		return ERR_PTR(ret);
+	INIT_LIST_HEAD(&pages);
+	while (size_remaining > 0) {
+		info = alloc_largest_available(buffer, size_remaining, max_order);
+		if (!info)
+			goto err;
+		list_add_tail(&info->list, &pages);
+		size_remaining -= (1 << info->order) * PAGE_SIZE;
+		max_order = info->order;
+		i++;
 	}
-	sg_set_page(table->sgl, virt_to_page(buffer->priv_virt), buffer->size,
-		    0);
-	return table;
+
+	table = kmalloc(sizeof(struct sg_table), GFP_KERNEL);
+	if (!table)
+		goto err;
+
+	ret = sg_alloc_table(table, i, GFP_KERNEL);
+
+	if (ret)
+		goto err1;
+
+	sg = table->sgl;
+	list_for_each_entry_safe(info, tmp_info, &pages, list) {
+		struct page *page = info->page;
+		sg_set_page(sg, page, (1 << info->order) * PAGE_SIZE,
+			    0);
+		sg = sg_next(sg);
+		list_del(&info->list);
+		kfree(info);
+	}
+
+	buffer->priv_virt = table;
+	return 0;
+err1:
+	kfree(table);
+err:
+	list_for_each_entry(info, &pages, list) {
+		free_buffer_page(buffer, info->page, info->order);
+		kfree(info);
+	}
+	return -ENOMEM;
 }
 
-static void ion_system_contig_heap_unmap_dma(struct ion_buffer *buffer)
-{
-	sg_free_table(buffer->sg_table);
-	kfree(buffer->sg_table);
-}
 
-static int ion_system_contig_heap_map_user(struct ion_buffer *buffer,
-					   struct vm_area_struct *vma)
-{
-	unsigned long pfn = __phys_to_pfn(virt_to_phys(buffer->priv_virt));
-	return remap_pfn_range(vma, vma->vm_start, pfn + vma->vm_pgoff,
-			       vma->vm_end - vma->vm_start,
-			       vma->vm_page_prot);
-
-}
 
 static void *ion_system_heap_map_kernel(struct ion_buffer *buffer)
 {
@@ -822,6 +906,56 @@ static void *ion_system_heap_map_kernel(struct ion_buffer *buffer)
 static void ion_system_heap_unmap_kernel(struct ion_buffer *buffer)
 {
 	vunmap(buffer->vaddr);
+}
+
+
+static struct sg_table *ion_system_heap_map_dma(struct ion_buffer *buffer)
+{
+	return buffer->priv_virt;
+}
+
+void ion_system_heap_free(struct ion_buffer *buffer)
+{
+	struct sg_table *table = buffer->priv_virt;
+	struct scatterlist *sg;
+	LIST_HEAD(pages);
+	int i;
+
+	for_each_sg(table->sgl, sg, table->nents, i)
+		free_buffer_page(buffer, sg_page(sg), get_order(sg_dma_len(sg)));
+	sg_free_table(table);
+	kfree(table);
+}
+int ion_system_heap_map_user(struct ion_buffer *buffer,
+			     struct vm_area_struct *vma)
+{
+	struct sg_table *table = buffer->priv_virt;
+	unsigned long addr = vma->vm_start;
+	unsigned long offset = vma->vm_pgoff * PAGE_SIZE;
+	struct scatterlist *sg;
+	int i;
+
+	for_each_sg(table->sgl, sg, table->nents, i) {
+		struct page *page = sg_page(sg);
+		unsigned long remainder = vma->vm_end - addr;
+		unsigned long len = sg_dma_len(sg);
+
+		if (offset >= sg_dma_len(sg)) {
+			offset -= sg_dma_len(sg);
+			continue;
+		} else if (offset) {
+			page += offset / PAGE_SIZE;
+			len = sg_dma_len(sg) - offset;
+			offset = 0;
+		}
+		len = min(len, remainder);
+		remap_pfn_range(vma, addr, page_to_pfn(page), len,
+				vma->vm_page_prot);
+		addr += len;
+		if (addr >= vma->vm_end)
+			return 0;
+	}
+	return 0;
 }
 
 //
