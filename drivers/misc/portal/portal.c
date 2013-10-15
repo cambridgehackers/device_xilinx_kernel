@@ -249,6 +249,8 @@ static void ion_buffer_destroy(struct kref *kref)
 	struct ion_buffer *buffer = container_of(kref, struct ion_buffer, ref);
 	struct ion_device *dev = buffer->dev;
 
+	driver_devel("%s:%d\n", __func__, buffer);
+
 	if (WARN_ON(buffer->kmap_cnt > 0))
 		ion_system_heap_unmap_kernel(buffer);
 	ion_system_heap_free(buffer);
@@ -260,12 +262,12 @@ static void ion_buffer_destroy(struct kref *kref)
 
 static void ion_buffer_get(struct ion_buffer *buffer)
 {
-	kref_get(&buffer->ref);
+  kref_get(&buffer->ref);
 }
 
 static int ion_buffer_put(struct ion_buffer *buffer)
 {
-	return kref_put(&buffer->ref, ion_buffer_destroy);
+  return kref_put(&buffer->ref, ion_buffer_destroy);
 }
 
 static void ion_buffer_add_to_handle(struct ion_buffer *buffer)
@@ -325,11 +327,11 @@ static void ion_handle_destroy(struct kref *kref)
 	struct ion_client *client = handle->client;
 	struct ion_buffer *buffer = handle->buffer;
 
+
 	mutex_lock(&buffer->lock);
 	while (handle->kmap_cnt)
 		ion_handle_kmap_put(handle);
 	mutex_unlock(&buffer->lock);
-
 	if (!RB_EMPTY_NODE(&handle->node))
 		rb_erase(&handle->node, &client->handles);
 
@@ -378,6 +380,7 @@ static void ion_handle_add(struct ion_client *client, struct ion_handle *handle)
 	rb_link_node(&handle->node, parent, p);
 	rb_insert_color(&handle->node, &client->handles);
 }
+
 
 static struct ion_handle *ion_alloc(struct ion_client *client, size_t len,
 				    size_t align)
@@ -450,6 +453,7 @@ static void ion_buffer_kmap_put(struct ion_buffer *buffer)
 		buffer->vaddr = NULL;
 	}
 }
+
 
 static void ion_handle_kmap_put(struct ion_handle *handle)
 {
@@ -524,11 +528,12 @@ static void ion_client_destroy(struct ion_client *client)
 {
 	struct ion_device *dev = client->dev;
 	struct rb_node *n;
+	
 
-	pr_debug("%s: %d\n", __func__, __LINE__);
+        pr_debug("%s: %d\n", __func__, __LINE__);
+
 	while ((n = rb_first(&client->handles))) {
-		struct ion_handle *handle = rb_entry(n, struct ion_handle,
-						     node);
+		struct ion_handle *handle = rb_entry(n, struct ion_handle, node);
 		ion_handle_destroy(&handle->ref);
 	}
 	down_write(&dev->lock);
@@ -642,7 +647,7 @@ static struct dma_buf_ops dma_buf_ops = {
 	.kunmap = ion_dma_buf_kunmap,
 };
 
-static int ion_share_dma_buf(struct ion_client *client, struct ion_handle *handle)
+static int ion_get_dma_buf(struct ion_client *client, struct ion_handle *handle)
 {
 	struct ion_buffer *buffer;
 	struct dma_buf *dmabuf;
@@ -658,7 +663,7 @@ static int ion_share_dma_buf(struct ion_client *client, struct ion_handle *handl
 	}
 
 	buffer = handle->buffer;
-	ion_buffer_get(buffer);
+	// ion_buffer_get(buffer);
 	dmabuf = dma_buf_export(buffer, &dma_buf_ops, buffer->size, O_RDWR);
 	if (IS_ERR(dmabuf)) {
 		ion_buffer_put(buffer);
@@ -675,7 +680,6 @@ static int ion_share_dma_buf(struct ion_client *client, struct ion_handle *handl
 static int ion_release(struct inode *inode, struct file *file)
 {
 	struct ion_client *client = file->private_data;
-
 	pr_debug("%s: %d\n", __func__, __LINE__);
 	ion_client_destroy(client);
 	return 0;
@@ -920,9 +924,10 @@ void ion_system_heap_free(struct ion_buffer *buffer)
 	struct scatterlist *sg;
 	LIST_HEAD(pages);
 	int i;
-
-	for_each_sg(table->sgl, sg, table->nents, i)
+	//printk("portal: ion_system_heap_free\n");
+	for_each_sg(table->sgl, sg, table->nents, i){
 		free_buffer_page(buffer, sg_page(sg), get_order(sg_dma_len(sg)));
+	}
 	sg_free_table(table);
 	kfree(table);
 }
@@ -1022,7 +1027,7 @@ static int portal_open(struct inode *inode, struct file *filep)
         driver_devel("%s: %s req_reg_base_phys %lx req_fifo_base_phys %lx\n", __FUNCTION__, portal_data->device_name,
                      (long)portal_data->req_reg_base_phys, (long)(portal_data->req_fifo_base_phys));
 
-        dump_ind_regs("portal_open", portal_data);
+        //dump_ind_regs("portal_open", portal_data);
 
         portal_client->ion_client = ion_client_create(portal_ion_device, "portal_ion_client");
         portal_client->portal_data = portal_data;
@@ -1035,7 +1040,7 @@ static int portal_open(struct inode *inode, struct file *filep)
         writel(1, portal_data->ind_reg_base_virt + 4);
 
 	// sanity check, see if interrupts have been enabled
-        dump_ind_regs("enable interrupts", portal_data);
+        //dump_ind_regs("enable interrupts", portal_data);
 
 	return 0;
 }
@@ -1069,18 +1074,21 @@ long portal_unlocked_ioctl(struct file *filep, unsigned int cmd, unsigned long a
 
 		if (copy_from_user(&alloc, (void __user *)arg, sizeof(alloc)))
 			return -EFAULT;
+                printk("%s, alloc.size=%d\n", __FUNCTION__, alloc.size);
                 alloc.size = round_up(alloc.size, 4096);
                 handle = ion_alloc(portal_client->ion_client, alloc.size, 4096);
                 printk("allocated ion_handle %p size %d\n", handle, alloc.size);
                 if (IS_ERR_VALUE((long)handle))
                         return -EINVAL;
-                alloc.fd = ion_share_dma_buf(portal_client->ion_client, handle);
+		alloc.fd = ion_get_dma_buf(portal_client->ion_client, handle);
                 dma_buf = dma_buf_get(alloc.fd);
                 attachment = dma_buf_attach(dma_buf, portal_client->portal_data->misc.this_device);
                 sg_table = dma_buf_map_attachment(attachment, DMA_TO_DEVICE);
-                printk("sg_table %p nents %d\n", sg_table, sg_table->nents);
+		if (0)
+		printk("sg_table %p nents %d\n", sg_table, sg_table->nents);
                 if (sg_table->nents > 1) {
-                        printk("sg_is_chain=%ld sg_is_last=%ld\n",
+		        if(0)
+		        printk("sg_is_chain=%ld sg_is_last=%ld\n",
                                sg_is_chain(sg_table->sgl), sg_is_last(sg_table->sgl));
                         for_each_sg(sg_table->sgl, sg, sg_table->nents, i) {
                                 printk("sg[%d] sg=%p phys=%lx offset=%08x length=%x\n",
