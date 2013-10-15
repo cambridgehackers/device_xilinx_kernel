@@ -249,7 +249,7 @@ static void ion_buffer_destroy(struct kref *kref)
 	struct ion_buffer *buffer = container_of(kref, struct ion_buffer, ref);
 	struct ion_device *dev = buffer->dev;
 
-	driver_devel("%s:%d\n", __func__, buffer);
+	driver_devel("%s:%d\n", __func__, (unsigned int)buffer);
 
 	if (WARN_ON(buffer->kmap_cnt > 0))
 		ion_system_heap_unmap_kernel(buffer);
