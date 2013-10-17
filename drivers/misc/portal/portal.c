@@ -926,7 +926,7 @@ void ion_system_heap_free(struct ion_buffer *buffer)
 	int i;
 	//printk("portal: ion_system_heap_free\n");
 	for_each_sg(table->sgl, sg, table->nents, i){
-		free_buffer_page(buffer, sg_page(sg), get_order(sg_dma_len(sg)));
+	  free_buffer_page(buffer, sg_page(sg), get_order(sg_dma_len(sg)));
 	}
 	sg_free_table(table);
 	kfree(table);
@@ -1029,15 +1029,15 @@ static int portal_open(struct inode *inode, struct file *filep)
 
         //dump_ind_regs("portal_open", portal_data);
 
-        portal_client->ion_client = ion_client_create(portal_ion_device, "portal_ion_client");
+        portal_client->ion_client = ion_client_create(portal_ion_device, portal_data->device_name);
         portal_client->portal_data = portal_data;
         printk("portal created ion_client %p\n", portal_client->ion_client);
         filep->private_data = portal_client;
 
-        // clear indication status (ignored by HW)
-        writel(0, portal_data->ind_reg_base_virt + 0);
-        // enable indication interrupts
-        writel(1, portal_data->ind_reg_base_virt + 4);
+        /* // clear indication status (ignored by HW) */
+        /* writel(0, portal_data->ind_reg_base_virt + 0); */
+        /* // enable indication interrupts */
+        /* writel(1, portal_data->ind_reg_base_virt + 4); */
 
 	// sanity check, see if interrupts have been enabled
         //dump_ind_regs("enable interrupts", portal_data);
