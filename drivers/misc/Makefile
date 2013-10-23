@@ -53,4 +53,3 @@ obj-$(CONFIG_INTEL_MEI)		+= mei/
 obj-$(CONFIG_SI570)		+= si570.o
 obj-$(CONFIG_ADV7511)           += adv7511.o
 obj-$(CONFIG_XYLON_LOGI2D3D)    += logi2d3d/
-obj-$(CONFIG_PORTAL)            += portal/
